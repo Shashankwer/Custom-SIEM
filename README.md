@@ -4,9 +4,6 @@ Detection engine acts as a datapipeline that can automate the movement and trans
 
 ## Basic Structure
 
-The basic flow of Detection Engine is as below:
-
-![Detection Engine Flow](./images/detection_engine_flow.png)
 
 1. The module reads the configuration from database and loads it into memory.
 2. The module then reads the data from the source and applies the transformations as defined in the configuration.
@@ -14,9 +11,6 @@ The basic flow of Detection Engine is as below:
 
 ## Module Components
 
-The module consists of following components, their relationship are explained as below:
-
-![Detection Engine Components](./images/detection_engine_components.png)
 
 ### 1. Detection Manager
 
@@ -33,13 +27,6 @@ The basic schema structure of detection manager is as below:
 ```json
 {
     'type': 'detection_manager',
-    'sub_system': csx,
-    'name': detection_manager_name,
-    'app_type': <optional>,
-    'cust_id': <id of the customer,
-    'tenant_id': <id of the tenant>,
-    'service_type': <service_type>,
-    'service_provider': <service_provider>,
     'collection_config': {
         <collection_name>: {
             columns: list of columns,
@@ -97,13 +84,6 @@ Schema description for the same is as below
 | Field | Description |
 | ----  | ----------- |
 | type  | Class type, always set to detection_manager |
-| sub_system | Sub system name, for current project would be set to csx |
-| name | Name of the detection Manager |
-| app_type | Optional field indicating the type of the app|
-| cust_id | Customer id |
-| tenant_id | Tenant id |
-| service_type | Service type |
-| service_provider | Service provider |
 | collection_config | A Hashmap of collections, which contains the list of collections and their data configuration required. The data is generalized across to all the header fields subscribed to it. |
 | collection_config.collection_name | Name of the collection |
 | collection_config.columns | List of columns to be selected from the collection |
@@ -121,10 +101,6 @@ Schema description for the same is as below
 | detection_header.type | Defines the header `type` either `metadata` or `detection` |
 | detection_header.collection | Collection where the results of the detections are stored |
 | default_selection | List of columns to be selected by default, irrespective to whether the header has provided it or not.|
-
-Following would define the lifecycle of the detection manager:
-
-![Detection Manager Lifecycle](./images/detection_manager_lifecycle.png)
 
 ### 2. Detection Header
 
@@ -276,10 +252,6 @@ Following is the schema structure of the detection
 | detections.detection_name.join_type | Specifies the join type. For join direction horizontal allowed join types include `inner`, `outer`, `left` and `right`. For join direction vertical allowed join types include `inner`: intersection, `outer`: union, `left`: keeps the left column intact, `right`: keeps the right columns intact |
 | remediations | A hashmap of remediation template name and the column name to which it needs to be applied  Seperate remediation templates can be applied to different columns. The remediation template is applied to the column only if the condition is satisfied. The condition is defined by the `conditions` field. For details [refer](#remediation-template) |
 |
-
-### Following defines the lifecycle of the detection header
-
-![Detection Header Lifecycle](images/detection_header_lifecycle.png)
 
 ### Detection Header Formats
 
@@ -1431,54 +1403,7 @@ Grammar description
 | corr     | correlation of values per column per window|
 | cov     | Covariance of the values per column per window |
 
-## Plugins
 
-The purpose of the plugins module is to provide an ability to extend custom functions/classes for rule module.
-
-Developers would copy out the packages to this file structure to allow custom loading of the files.
-
-The package has the following structure
-
-```file
-plugins
-|__ __init__.py
-|__ <plugin1_name>
-    |__ __init__.py
-    |__ <file1_name.py>
-    |__ <file2_name.py>
-    |__ <file3_name.py>
-|__ <plugin2_name>
-    |__ __init__.py
-    |__ <file1_name.py>
-    |__ <file2_name.py>
-    |__ <file3_name.py>
-```
-
-- The module checks for the existence of __init__.py inside each plugin
-- Developer is expected to implement function callable with respective function signature
- which can be called inside the rule module by rule name. 
-
-Plugin name will form the rule_name to be called by function_names inside the
-detection.py <signature>
-
-Following is an example for the file contents inside <package_name>/__init__.py
-
-```python
-#! /bin/bash/python
-
-import <class1>
-import <class2>
-
-...
-
-def entry_point(data, <param1>, <param2>, ...):
-    '''
-    Entry point function for the plugin to be installed
-    '''
-    # do some operation
-    return <dataframe>
-...
-```
 
 ## Appendix
 
@@ -1502,119 +1427,4 @@ Few important points
 | right     | vertical      | Concatenates dataframe keeping the columns from right dataframe intact |
 | outer     | vertical       | Concatenates data frames. All columns are considered and concatenated. For a column name non existant in either of the joining data will its data replaced by NA for the corresponding column |
 
-## Conditional Joining in Complex Select
 
-This covers scenarios where the data selected need not necessary match the record passed. E.g.
-
-```yaml
-  complex_join_type_test_2:
-    detection_type: complex_select
-    collection_name: 
-      complex_join_type_test_1: ['ip_to','ip_from']
-      const_ip_to_location: ['ip_to','ip_from']
-      match_conditions: 
-        ip_to: 'lte'
-        ip_from: 'gte'
-    is_multitenant: -1
-    batch_size: 1
-    join_type: 'left'
-    columns:
-      - 'ip_to'
-      - 'ip_from'
-      - 'country_name'
-      - 'country_code'
-      - 'region'
-      - 'city'
-```
-
-In the above example, the data is to be selected from collection `const_ip_to_location` based on the data present in detection `complex_join_type_test_1`
-
-Match conditions provide a condition specifying how to match the data from the collection. For the above example, this roughly translates to 
-
-```json
-// mongo query
-
-db.const_ip_to_location.find({
-  ip_to: {
-    $lte: complex_join_type_test_1.ip_to
-  },
-  ip_from: {
-    $gte: complex_join_type_test_1.ip_from
-  }
-})
-```
-
-## Remediation Template
-
-The section defines the description for `remediations` field in `detection header`. The template has following structure
-
-```json
-remediations: [
-    {
-        <column_name>: <remediatation_template_value>
-        conditions: {
-                <match_column_name>: column_value # can be a regex
-                match_conditon: eq | ne |gt | lt...  
-            }
-    }
-]
-```
-
-The remediations field defines the list of remediations to be performed. It makes use of conditions to check if the conditions could be applied and further apply the same. This results in publishing the data in `detections` collection as follows. 
-
-```json
-// detection collection
-{
-  ... // previous field names
-  remediation: {
-    <column_value1>: [<remediation_template_1>,..., <remediation_template_n>]],
-    ...
-    <column_valuen>: [<remediation_template_1>,..., <remediation_template_n>]],
-  }
-  ... // other fields
-}
-
-```
-
-The description of the fields are as follows
-
-| Field Name | Description | Example |
-| ---------- | ----------- | ------- |
-| <column_name> | Column values for which the remediation template value has to be mapped to | `res_name` |
-| <remediatation_template_value> | Remediation template name which needs to be mapped against the column value. The template value should be existant in `remediation_template` collection | `disable_user` |
-| conditions | Section defining the match condition that needs to be satisfied for the remediation template to be applied |
-| conditions.<match_column_name> | Column in the current dataframe used for matching. The conditions.<column_name> can be same as <column_name> or different  | `res_type` |
-| conditions.<match_column_value> | Value against which each entry of <column_name> is matched against. | `instance` |
-| conditions.match_condition | Condition to be applied for matching. Supported argument include , `eq`, `ne`, `gt`, `gte`, `lt`,`lte`, `==`, `!=`,`<>`, `>=`, `<=` | `eq` (default) |
-
-## Environment Variables
-
- 
-### DETECTION Manager
-
-| Variable Name | Description | Default Value |
-| ------------- | ----------- | ------------- |
-| MANAGER_NAME  | Name of the detection manager | None |
-| CUST_ID       | Name of the customer ID       | None |
-| TENANT_ID     | Name of the tenant ID 	 	| None |
-| SERVICE_TYPE  | Name of the service type      | None |
-| SERVICE_PROVIDER | Name of the service Provider | None |
-| CONFIG_DATABASE | Database where the detection configuration is stored | contextguard |
-| CONFIG_COLLECTION | Name of the collection storing the config collection | detection_config | 
-| BATCH_SIZE | Minimum number of data to query in one go | 1000 |
-| APP_TYPE | Name of the app_type | None |
-| SUB_SYSTEM | Name of the sub_system | None |
-
-## Detection header 
-
-| Variable Name | Description | Default Value |
-| ------------- | ----------- | ------------- |
-| PIKA_EXCHANGE_OUT | Name of the exchange to publish the data | log_event_archiver |
-| PIKA_EXCHANGE_TYPE | Type of the exchange | direct |
-| PIKA_ROUTING_KEY | Routing key name | insert |
-| DETECTION_PIKA_EXCHANGE_OUT | Name of the exchange to publish data of type detection | risk_engine_exchange |
-| DETECTION_PIKA_EXCHANGE_OUT_TYPE | Name of the exchange type for the detection_type | direct |
-| DETECTION_PIKA_ROUTING_KEY | Name of the routing key for detection engine to publish | insert |
-| PERSISTENT | Flag to indicate whether to store the data in the database | 1 |
-| CONST_COLS | additional column to be published or selected in addition | `['_id', 'user']` |
-| REMEDIATION_COLLECTION | name of the collection which stores the remediation template name | remediation_template |
