@@ -253,52 +253,6 @@ Following is the schema structure of the detection
 | remediations | A hashmap of remediation template name and the column name to which it needs to be applied  Seperate remediation templates can be applied to different columns. The remediation template is applied to the column only if the condition is satisfied. The condition is defined by the `conditions` field. For details [refer](#remediation-template) |
 |
 
-### Detection Header Formats
-
-Detection headers are of following format:
-
-1. Type: `metadata`: Results of the detection are stored in a user provided metadata collection.
-
-Message published for headers of this type would be of the following type
-
-```json
-
-{
-    "algo_name": <name of the detection header>,
-    "action_category": "constant",
-    "res_type": <metadata_collection_name>, 
-    "cust_id": "customer_id", // populated if initialized
-    "tenant_id": "tenant_id", // populated if initialized
-    "service_type": "service_type", // populated if initialized
-    "service_provider": "service_provider", // populated if initialized
-    ...expanded data received from detection header
-}
-
-```
-
-2. Type: `detections`
-
-```json
-{
-    "algo_name": <name of the detection header>,
-    "action_category": "constant",
-    "res_type": "detections", 
-    "cust_id": "customer_id", // populated if initialized
-    "tenant_id": "tenant_id", // populated if initialized
-    "service_type": "service_type", // populated if initialized
-    "service_provider": "service_provider", // populated if initialized
-    "time_detected": <time of detection>, 
-    "time_log": <time_log of the log entry>,
-    "raw_coll": <name of collections containing the data from where detection was made from>, 
-    "raw_oids": <list of object ids of the data from where detection was made from>,
-    "detection": <name of the detection>,
-    "entity_type": <type of the entity affected>,
-    "entity": <user/identity responsible for causing this detection>,
-    "tags": <list of tags associated with the detection>,
-    "detection_info": <object of  extra fields associated with the detection to be published>,
-}
-```
-
 ## 3. Detections
 
 Detections are the most atomic unit of the detection engine. The class is responsible for granular matching and comparisons. The class will have the following schema structure
